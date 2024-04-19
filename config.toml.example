@@ -1,6 +1,0 @@
-# GRPC Server Address
-grpc_server_address = "localhost:9090"
-
-# RPC Server Address
-rpc_server_address = "http://localhost:26657"
-websocket_path = "/websocket"
