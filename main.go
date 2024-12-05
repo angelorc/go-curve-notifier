@@ -9,12 +9,12 @@ import (
 	"github.com/angelorc/go-curve-notifier/internal/query"
 	"github.com/angelorc/go-curve-notifier/internal/telegram"
 	"github.com/angelorc/go-curve-notifier/internal/types"
+	tmabcitypes "github.com/cometbft/cometbft/abci/types"
+	"github.com/cometbft/cometbft/crypto/tmhash"
+	rpchttp "github.com/cometbft/cometbft/rpc/client/http"
+	ctypes "github.com/cometbft/cometbft/rpc/core/types"
+	tmtypes "github.com/cometbft/cometbft/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	tmabcitypes "github.com/tendermint/tendermint/abci/types"
-	"github.com/tendermint/tendermint/crypto/tmhash"
-	rpchttp "github.com/tendermint/tendermint/rpc/client/http"
-	ctypes "github.com/tendermint/tendermint/rpc/core/types"
-	tmtypes "github.com/tendermint/tendermint/types"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -25,7 +25,7 @@ import (
 )
 
 func formatCoin(coin sdk.Coin) string {
-	amt := coin.Amount.ToDec().QuoInt64(1_000_000).MustFloat64()
+	amt := coin.Amount.ToLegacyDec().QuoInt64(1_000_000).MustFloat64()
 	var denom string
 	if coin.Denom == "ubtsg" {
 		denom = "BTSG"
@@ -190,12 +190,19 @@ func main() {
 
 	subscribeToEvents := func(wsClient *rpchttp.HTTP) (<-chan ctypes.ResultEvent, <-chan ctypes.ResultEvent, error, error) {
 		queryMint := fmt.Sprintf("wasm.action = 'mint_bs721_curve_nft'")
+		//queryMint := fmt.Sprintf("tm.event='NewBlock'")
 		queryBurn := fmt.Sprintf("wasm.action = 'burn_bs721_curve_nft'")
 
 		eventMintCh, errMintCh := wsClient.Subscribe(ctx, "bot", queryMint)
+		if errMintCh != nil {
+			return nil, nil, errMintCh, nil
+		}
 		l.Info("Subscribed to mint events", zap.String("query", queryMint))
 
 		eventBurnCh, errBurnCh := wsClient.Subscribe(ctx, "bot", queryBurn)
+		if errBurnCh != nil {
+			return nil, nil, nil, errBurnCh
+		}
 		l.Info("Subscribed to burn events", zap.String("query", queryBurn))
 		return eventMintCh, eventBurnCh, errMintCh, errBurnCh
 	}
@@ -217,10 +224,13 @@ func main() {
 		for {
 			select {
 			case event := <-eventMintCh:
+				//fmt.Println("Mint event", event)
 				handleEvent(l, cfg, qc, event)
 			case event := <-eventBurnCh:
+				//fmt.Println("Burn event")
 				handleEvent(l, cfg, qc, event)
 			case <-ticker.C:
+				//fmt.Println("Reconnecting websocket client")
 				err := wsClient.Stop()
 				if err != nil {
 					l.Fatal("Error stopping websocket client", zap.Error(err))

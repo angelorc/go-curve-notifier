@@ -2,7 +2,7 @@ package query
 
 import (
 	"context"
-	"github.com/tendermint/tendermint/libs/json"
+	"github.com/cometbft/cometbft/libs/json"
 	"google.golang.org/grpc"
 
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"

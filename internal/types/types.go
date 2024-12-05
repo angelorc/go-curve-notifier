@@ -2,8 +2,8 @@ package types
 
 import (
 	"fmt"
+	"github.com/cometbft/cometbft/abci/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/tendermint/tendermint/abci/types"
 )
 
 type Telegram struct {
